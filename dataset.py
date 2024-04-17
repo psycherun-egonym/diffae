@@ -66,7 +66,7 @@ class ImageDataset(Dataset):
         img = img.convert('RGB')
         if self.transform is not None:
             img = self.transform(img)
-        return {'img': img, 'index': index}
+        return {'img': img, 'index': index, 'file_name': self.paths[index].name}
 
 
 class SubsetDataset(Dataset):
