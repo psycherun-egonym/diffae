@@ -6,8 +6,8 @@ from templates import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to generate latent codes')
-    parser.add_argument('--data_dir', type=str, default='imgs/')
-    parser.add_argument('--output_dir', type=str, default='latent_codes/')
+    parser.add_argument('--data_dir', type=str, default='../datasets/ffhq+fairface256_100k/00000/')
+    parser.add_argument('--output_dir', type=str, default='../datasets/ffhq+fairface256_100k/00000/')
     args = parser.parse_args()
     return args
 
@@ -17,7 +17,6 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     conf = ffhq256_autoenc()
-    print(conf.name)
 
     # TODO: load just the semantic encoder instead of the whole model
 
@@ -32,21 +31,33 @@ def main():
                         exts=['jpg', 'JPG', 'png'], 
                         do_augment=False)
     print('Dataset size: ', len(data))
-    
-    latent_codes = []
+
+
+    latents = []
     for image in tqdm(data):
         batch = image['img'][None]
-        latent_code = model.encode(batch.to(device)).cpu()
+        latent_code = model.encode(batch.to(device))
+        latent_code = latent_code.cpu().squeeze()
+        latent_code = latent_code.numpy().tolist()
 
-        latent_codes.append({
+        row = {
             "file_name": image['file_name'],
-            "latent_code": latent_code.numpy().tolist()
-        }) 
+            "latent_code": latent_code,
+            "text": "a face of a person"
+        } 
+        latents.append(row)
 
-    with open(os.path.join(args.output_dir, 'metadata.jsonl'), 'w') as fp:
-        json.dump(latent_codes, fp, indent='')   
+    out_file_path = os.path.join(args.output_dir, 'metadata.jsonl')
 
-    
+    with open(out_file_path, 'w') as fp:
+        for row in latents:
+            print(json.dumps(row), file=fp)   
+
+    # test if the written jsonl file is valid
+    # with open(out_file_path, 'r') as fp:
+    #     for row in fp:
+    #         obj = json.loads(row)  
+
 if __name__ == '__main__':
     main()
 
